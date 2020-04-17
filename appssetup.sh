@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 
 function addRepo {
-    read -ep "You need to add and enable $1 repositories in order to install $2. Type 'y' if you want to do it now, or 'n' if you have already done that: " answer
-    if [[ $answer = "y" ]]
+    read -rep "You need to add and enable $1 repositories in order to install $2. Type 'y' if you want to do it now, or 'n' if you have already done that: " answer
+    if [[ $answer = "y" ]]; then
         echo "Adding and enabling $1 repositories..."
         case $distro in
             ubuntu)
                 sudo add-apt-repository universe
-                sudo apt update
+                sudo apt-get update
             ;;
             fedora)
-                sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+                sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-"$(rpm -E %fedora)".noarch.rpm https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-"$(rpm -E %fedora)".noarch.rpm
                 sudo dnf check-update
             ;;
             opensuse-leap)
-                sudo zypper addrepo -f http://download.opensuse.org/distribution/leap/$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')/repo/non-oss/ "Non-OSS Repo"
+                sudo zypper addrepo -f http://download.opensuse.org/distribution/leap/"$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')"/repo/non-oss/ "Non-OSS Repo"
                 sudo zypper refresh
             ;;
             opensuse-tumbleweed)
@@ -29,50 +29,52 @@ function addRepo {
 function terminate {
     cd ..
     echo "Removing temporary directory..."
-    rm -r tempDir
+    rm -r /tmp/tempDir
+    unset distro menuitems PS3 option 1 2
     echo "Done! Terminating script..."
     exit
 }
 
 printf "%s\n" "Install proprietary apps/drivers" "--------------------------------" "Preparing directory for storing packages..."
-mkdir tempDir
-cd tempDir
+mkdir /tmp/tempDir
+echo "Entering created directory..."
+cd /tmp/tempDir || exit
 
 distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-menuitems=( Discord Skype 'VS Code' 'VS Code Insiders' Telegram 'Lexmark Printer Driver' 'Terminate script' )
+menuitems=( 'Discord' 'Skype' 'VS Code' 'VS Code Insiders' 'Telegram' 'Lexmark Printer Driver' 'Terminate script' )
 PS3="Which of these apps/drivers do you want to install?"
 
-select option in ${menuitems};
+select option in "${menuitems[@]}"
 do
     case $distro in
         debian|ubuntu)
-            case $REPLY in
-                1)
-                    wget -O discord.deb https://discordapp.com/api/download?platform=linux&format=deb
-                    sudo apt install $(pwd)/discord.deb
+            case $option in
+                'Discord')
+                    wget -O discord.deb https://discordapp.com/api/download\?platform=linux\&format=deb
+                    sudo apt-get install ./discord.deb
                 ;;
-                2)
+                'Skype')
                     wget -O skype.deb https://repo.skype.com/latest/skypeforlinux-64.deb
-                    sudo apt install $(pwd)/skype.deb
+                    sudo apt-get install ./skype.deb
                 ;;
-                3)
-                    wget -O code.deb https://go.microsoft.com/fwlink/?LinkID=760868
-                    sudo apt install $(pwd)/code.deb
+                'VS Code')
+                    wget -O code.deb https://go.microsoft.com/fwlink/\?LinkID=760868
+                    sudo apt-get install ./code.deb
                 ;;
-                4)
-                    wget -O code-insiders.deb https://go.microsoft.com/fwlink/?LinkID=760865
-                    sudo apt install $(pwd)/code-insiders.deb
+                'VS Code Insiders')
+                    wget -O code-insiders.deb https://go.microsoft.com/fwlink/\?LinkID=760865
+                    sudo apt-get install ./code-insiders.deb
                 ;;
-                5)
-                    if [[ $distro = "ubuntu" ]]
+                'Telegram')
+                    if [[ $distro = "ubuntu" ]]; then
                         addRepo "Universe" "Telegram"
                     fi
-                    sudo apt install telegram
+                    sudo apt-get install telegram
                 ;;
-                #6)
+                #'Lexmark Printer Driver')
                     # .deb package in preparation...
                 #;;
-                7)
+                'Terminate script')
                     terminate
                 ;;
                 *)
@@ -82,9 +84,8 @@ do
         ;;
         fedora|opensuse-leap|opensuse-tumbleweed)
             case $REPLY in
-                1)
-                    if [[ $distro = "fedora" ]]
-                    then
+                'Discord')
+                    if [[ $distro = "fedora" ]]; then
                         addRepo "RPMFusion" "Discord"
                         sudo dnf install discord
                     else
@@ -92,36 +93,32 @@ do
                         sudo zypper install discord
                     fi
                 ;;
-                2)
+                'Skype')
                     wget -O skype.rpm https://repo.skype.com/latest/skypeforlinux-64.rpm
-                    if [[ $distro = "fedora" ]]
-                    then
-                        sudo dnf install $(pwd)/skype.rpm
+                    if [[ $distro = "fedora" ]]; then
+                        sudo dnf install ./skype.rpm
                     else
-                        sudo zypper install $(pwd)/skype.rpm
+                        sudo zypper install ./skype.rpm
                     fi
                 ;;
-                3)
-                    wget -O code.rpm https://go.microsoft.com/fwlink/?LinkID=760867
-                    if [[ $distro = "fedora" ]]
-                    then
-                        sudo dnf install $(pwd)/code.rpm
+                'VS Code')
+                    wget -O code.rpm https://go.microsoft.com/fwlink/\?LinkID=760867
+                    if [[ $distro = "fedora" ]]; then
+                        sudo dnf install ./code.rpm
                     else
-                        sudo zypper install $(pwd)/code.rpm
+                        sudo zypper install ./code.rpm
                     fi
                 ;;
-                4)
-                    wget -O code-insiders.rpm https://go.microsoft.com/fwlink/?LinkID=760866
-                    if [[ $distro = "fedora" ]]
-                    then
-                        sudo dnf install $(pwd)/code-insiders.rpm
+                'VS Code Insiders')
+                    wget -O code-insiders.rpm https://go.microsoft.com/fwlink/\?LinkID=760866
+                    if [[ $distro = "fedora" ]]; then
+                        sudo dnf install ./code-insiders.rpm
                     else
-                        sudo zypper install $(pwd)/code-insiders.rpm
+                        sudo zypper install ./code-insiders.rpm
                     fi
                 ;;
-                5)
-                    if [[ $distro = "fedora" ]]
-                    then
+                'Telegram')
+                    if [[ $distro = "fedora" ]]; then
                         addRepo "RPMFusion" "Telegram"
                         sudo dnf install telegram
                     else
@@ -129,10 +126,10 @@ do
                         sudo zypper install telegram
                     fi
                 ;;
-                #6)
+                #'Lexmark Printer Driver')
                     # .rpm package in preparation...
                 #;;
-                7)
+                'Terminate script')
                     terminate
                 ;;
                 *)
@@ -144,5 +141,4 @@ do
             echo "Your system is not supported!"
         ;;
     esac
-;
 done

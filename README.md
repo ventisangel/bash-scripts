@@ -9,7 +9,7 @@ Scripts published here are created in order to help users configuring their GNU/
 * openSUSE
 
 ## Scripts' descriptions
-* appssetup - this script lets user install some proprietary apps without having searching for them on different websites and manually download packages
+* *appssetup.sh* - this script lets user install some proprietary apps without having searching for them on different websites and manually download packages
 
 ## Future plans
 * GUI (Zenity/KDialog)
