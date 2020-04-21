@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 function addRepo {
-    read -rep "You need to add and enable $1 repositories in order to install $2. Type 'y' if you want to do it now, or 'n' if you have already done that: " answer
-    if [[ $answer = "y" ]]; then
+    read -rp "You need to add and enable $1 repositories in order to install $2. Type 'y' if you want to do it now, or 'n' if you have already done that: " answer
+    if [[ "$answer" = "y" ]]; then
         echo "Adding and enabling $1 repositories..."
         case $distro in
             ubuntu)
@@ -30,7 +30,6 @@ function terminate {
     cd ..
     echo "Removing temporary directory..."
     rm -r /tmp/tempDir
-    unset distro menuitems PS3 option 1 2
     echo "Done! Terminating script..."
     exit
 }
@@ -42,7 +41,9 @@ cd /tmp/tempDir || exit
 
 distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 menuitems=( 'Discord' 'Skype' 'VS Code' 'VS Code Insiders' 'Telegram' 'Lexmark Printer Driver' 'Terminate script' )
-PS3="Which of these apps/drivers do you want to install?"
+PS3="Which of these apps/drivers do you want to install? "
+
+trap "echo You cannot interrupt execution of this script, please wait..." SIGINT SIGQUIT SIGTERM
 
 select option in "${menuitems[@]}"
 do
@@ -66,7 +67,7 @@ do
                     sudo apt-get install ./code-insiders.deb
                 ;;
                 'Telegram')
-                    if [[ $distro = "ubuntu" ]]; then
+                    if [[ "$distro" = "ubuntu" ]]; then
                         addRepo "Universe" "Telegram"
                     fi
                     sudo apt-get install telegram
@@ -83,9 +84,9 @@ do
             esac
         ;;
         fedora|opensuse-leap|opensuse-tumbleweed)
-            case $REPLY in
+            case $option in
                 'Discord')
-                    if [[ $distro = "fedora" ]]; then
+                    if [[ "$distro" = "fedora" ]]; then
                         addRepo "RPMFusion" "Discord"
                         sudo dnf install discord
                     else
@@ -95,7 +96,7 @@ do
                 ;;
                 'Skype')
                     wget -O skype.rpm https://repo.skype.com/latest/skypeforlinux-64.rpm
-                    if [[ $distro = "fedora" ]]; then
+                    if [[ "$distro" = "fedora" ]]; then
                         sudo dnf install ./skype.rpm
                     else
                         sudo zypper install ./skype.rpm
@@ -103,7 +104,7 @@ do
                 ;;
                 'VS Code')
                     wget -O code.rpm https://go.microsoft.com/fwlink/\?LinkID=760867
-                    if [[ $distro = "fedora" ]]; then
+                    if [[ "$distro" = "fedora" ]]; then
                         sudo dnf install ./code.rpm
                     else
                         sudo zypper install ./code.rpm
@@ -111,14 +112,14 @@ do
                 ;;
                 'VS Code Insiders')
                     wget -O code-insiders.rpm https://go.microsoft.com/fwlink/\?LinkID=760866
-                    if [[ $distro = "fedora" ]]; then
+                    if [[ "$distro" = "fedora" ]]; then
                         sudo dnf install ./code-insiders.rpm
                     else
                         sudo zypper install ./code-insiders.rpm
                     fi
                 ;;
                 'Telegram')
-                    if [[ $distro = "fedora" ]]; then
+                    if [[ "$distro" = "fedora" ]]; then
                         addRepo "RPMFusion" "Telegram"
                         sudo dnf install telegram
                     else
