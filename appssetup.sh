@@ -36,7 +36,7 @@ menu() {
 		i=$((i + 1))
 		echo "$i) $item"
 	done
-	printf "%s: " "$PS3"
+	printf %s "$PS3"
 	read -r option
 }
 
@@ -52,7 +52,7 @@ cd /tmp/tempDir || exit 1
 
 distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 menuitems='Discord Skype VS-Code VS-Code-Insiders Telegram Terminate'
-PS3='Which of these apps/drivers do you want to install? '
+PS3='Which of these apps/drivers do you want to install?: '
 
 # main loop
 while :; do
@@ -62,6 +62,7 @@ while :; do
 	case $option in
 	# discord
 	1)
+		echo "Installing discord"
 		if [ "$distro" = 'debian' ] || [ "$distro" = 'ubuntu' ]; then
 			wget -O discord.deb https://discordapp.com/api/download\?platform=linux\&format=deb
 			sudo apt-get install ./discord.deb
@@ -75,6 +76,7 @@ while :; do
 		;;
 	# skype
 	2)
+		echo "Installing skype"
 		if [ "$distro" = 'debian' ] || [ "$distro" = 'ubuntu' ]; then
 			wget -O skype.deb https://repo.skype.com/latest/skypeforlinux-64.deb
 			sudo apt-get install ./skype.deb
@@ -88,6 +90,7 @@ while :; do
 		;;
 	# vs code
 	3)
+		echo "Installing vs-code"
 		if [ "$distro" = 'debian' ] || [ "$distro" = 'ubuntu' ]; then
 			wget -O code.deb https://go.microsoft.com/fwlink/\?LinkID=760868
 			sudo apt-get install ./code.deb
@@ -101,6 +104,7 @@ while :; do
 		;;
 	# insider
 	4)
+		echo "Installing vs-code-insider"
 		if [ "$distro" = 'debian' ] || [ "$distro" = 'ubuntu' ]; then
 			wget -O code-insiders.deb https://go.microsoft.com/fwlink/\?LinkID=760865
 			sudo apt-get install ./code-insiders.deb
@@ -114,6 +118,7 @@ while :; do
 		;;
 	# telegram
 	5)
+		echo "Installing telegram"
 		if [ "$distro" = 'debian' ]; then
 			sudo apt-get install telegram
 		elif [ "$distro" = 'ubuntu' ]; then
