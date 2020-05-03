@@ -70,7 +70,7 @@ do
                     if [[ "$distro" = "ubuntu" ]]; then
                         addRepo "Universe" "Telegram"
                     fi
-                    sudo apt-get install telegram
+                    sudo apt-get install telegram-desktop
                 ;;
                 #'Lexmark Printer Driver')
                     # .deb package in preparation...
