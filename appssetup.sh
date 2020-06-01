@@ -2,7 +2,7 @@
 
 function addRepo {
     read -rp "You need to add and enable $1 repositories in order to install $2. Type 'y' if you want to do it now, or 'n' if you have already done that: " answer
-    if [[ "$answer" = "y" ]]; then
+    if [ "$answer" = "y" ]; then
         echo "Adding and enabling $1 repositories..."
         case $distro in
             ubuntu)
@@ -28,7 +28,7 @@ function addRepo {
 
 function addGoogleRepoKey {
     read -rp "You need to download and install appropriate signing key in order to install packages from Google Linux Software Repositories. Type 'y' if you want to do it now, or 'n' if you have already done that: " answer
-    if [[ "$answer" = "y" ]]; then
+    if [ "$answer" = "y" ]; then
         echo "Downloading and installing Google Linux Software Repositories package signing key..."
         wget -O google_linux_signing_key.pub https://dl.google.com/linux/linux_signing_key.pub
         case $distro in
@@ -41,6 +41,46 @@ function addGoogleRepoKey {
         esac
         unset answer
     fi
+}
+
+function installDepsLexmark {
+    echo "Installing dependencies..."
+    case $distro in
+        debian)
+            tar --extract --auto-compression --overwrite --file="debian-deps.tar.gz"
+            sudo apt-get install ./libstdc++5_3.3.6-30_i386.deb ./libcupsimage2_2.2.10-6+deb10u3_i386.deb
+        ;;
+        ubuntu)
+            tar --extract --auto-compression --overwrite --file="ubuntu-deps.tar.gz"
+            sudo apt-get install ./libstdc++5_3.3.6-30ubuntu2_i386.deb ./libcupsimage2_2.3.1-9ubuntu1.1_i386.deb
+        ;;
+        fedora)
+            tar --extract --auto-compression --overwrite --file="fedora-deps.tar.gz"
+            sudo dnf install ./compat-libstdc++-33-3.2.3-68.16.fc26.1.i686.rpm ./cups-libs-2.2.12-8.fc30.i686.rpm
+        ;;
+        opensuse-leap|opensuse-tumbleweed)
+            tar --extract --auto-compression --overwrite --file="opensuse-deps.tar.gz"
+            sudo zypper install ./libstdc++33-32bit-3.3.3-lp152.41.1.x86_64.rpm ./libcupsimage2-32bit-2.2.7-lp152.8.1.x86_64.rpm
+        ;;
+    esac
+}
+
+function installLexmarkDriver {
+    echo "Installing driver..."
+    case $distro in
+        debian)
+            sudo apt-get install ./lxkbZ600drv.deb
+        ;;
+        ubuntu)
+            sudo apt-get install ./lxkbZ600drv.deb
+        ;;
+        fedora)
+            sudo dnf install ./lxkbZ600drv.rpm
+        ;;
+        opensuse-leap|opensuse-tumbleweed)
+            sudo zypper install ./lxkbZ600drv.rpm
+        ;;
+    esac
 }
 
 function terminate {
@@ -84,7 +124,7 @@ do
                     sudo apt-get install ./code-insiders.deb
                 ;;
                 'Telegram')
-                    if [[ "$distro" = "ubuntu" ]]; then
+                    if [ "$distro" = "ubuntu" ]; then
                         addRepo "Universe" "Telegram"
                     fi
                     sudo apt-get install telegram-desktop
@@ -107,9 +147,15 @@ do
                     wget -O opera.deb https://download.opera.com/download/get/\?partner=www\&opsys=Linux\&package=DEB
                     sudo apt-get install ./opera.deb
                 ;;
-                #'Lexmark Printer Driver')
-                    # .deb package in preparation...
-                #;;
+                'Lexmark Printer Driver')
+                    mkdir lexmark
+                    cd lexmark || exit
+                    sudo dpkg --add-architecture i386
+                    installDepsLexmark
+                    installLexmarkDriver
+                    sudo systemctl restart cups.service
+                    cd ..
+                ;;
                 'Terminate script')
                     terminate
                 ;;
@@ -121,7 +167,7 @@ do
         fedora|opensuse-leap|opensuse-tumbleweed)
             case $option in
                 'Discord')
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         addRepo "RPMFusion" "Discord"
                         sudo dnf install discord
                     else
@@ -131,7 +177,7 @@ do
                 ;;
                 'Skype')
                     wget -O skype.rpm https://repo.skype.com/latest/skypeforlinux-64.rpm
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./skype.rpm
                     else
                         sudo zypper install ./skype.rpm
@@ -139,7 +185,7 @@ do
                 ;;
                 'VS Code')
                     wget -O code.rpm https://go.microsoft.com/fwlink/\?LinkID=760867
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./code.rpm
                     else
                         sudo zypper install ./code.rpm
@@ -147,14 +193,14 @@ do
                 ;;
                 'VS Code Insiders')
                     wget -O code-insiders.rpm https://go.microsoft.com/fwlink/\?LinkID=760866
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./code-insiders.rpm
                     else
                         sudo zypper install ./code-insiders.rpm
                     fi
                 ;;
                 'Telegram')
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         addRepo "RPMFusion" "Telegram"
                         sudo dnf install telegram-desktop
                     else
@@ -164,7 +210,7 @@ do
                 ;;
                 'MS Teams')
                     wget -O ms-teams.rpm https://go.microsoft.com/fwlink/p/\?linkid=2112907
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./ms-teams.rpm
                     else
                         sudo zypper install ./ms-teams.rpm
@@ -173,7 +219,7 @@ do
                 'Google Chrome')
                     addGoogleRepoKey
                     wget -O google-chrome.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./google-chrome.rpm
                     else
                         sudo zypper install ./google-chrome.rpm
@@ -182,7 +228,7 @@ do
                 'Google Earth')
                     addGoogleRepoKey
                     wget -O google-earth.rpm http://dl.google.com/dl/earth/client/current/google-earth-pro-stable-current.x86_64.rpm
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./google-earth.rpm
                     else
                         sudo zypper install ./google-earth.rpm
@@ -190,15 +236,20 @@ do
                 ;;
                 'Opera')
                     wget -O opera.rpm https://download.opera.com/download/get/\?partner=www\&opsys=Linux\&package=RPM
-                    if [[ "$distro" = "fedora" ]]; then
+                    if [ "$distro" = "fedora" ]; then
                         sudo dnf install ./opera.rpm
                     else
                         sudo zypper install ./opera.rpm
                     fi
                 ;;
-                #'Lexmark Printer Driver')
-                    # .rpm package in preparation...
-                #;;
+                'Lexmark Printer Driver')
+                    mkdir lexmark
+                    cd lexmark || exit
+                    installDepsLexmark
+                    installLexmarkDriver
+                    sudo systemctl restart cups.service
+                    cd ..
+                ;;
                 'Terminate script')
                     terminate
                 ;;
