@@ -47,40 +47,80 @@ function installDepsLexmark {
     echo "Installing dependencies..."
     case $distro in
         debian)
-            tar --extract --auto-compression --overwrite --file="debian-deps.tar.gz"
+            wget https://github.com/ventisangel/bash-scripts/raw/master/lexmark/debian-deps.tar.gz
+            tar --extract --gzip --file="debian-deps.tar.gz" --overwrite
             sudo apt-get install ./libstdc++5_3.3.6-30_i386.deb ./libcupsimage2_2.2.10-6+deb10u3_i386.deb
         ;;
         ubuntu)
-            tar --extract --auto-compression --overwrite --file="ubuntu-deps.tar.gz"
+            wget https://github.com/ventisangel/bash-scripts/raw/master/lexmark/ubuntu-deps.tar.gz
+            tar --extract --gzip --file="ubuntu-deps.tar.gz" --overwrite
             sudo apt-get install ./libstdc++5_3.3.6-30ubuntu2_i386.deb ./libcupsimage2_2.3.1-9ubuntu1.1_i386.deb
         ;;
         fedora)
-            tar --extract --auto-compression --overwrite --file="fedora-deps.tar.gz"
+            wget https://github.com/ventisangel/bash-scripts/raw/master/lexmark/fedora-deps.tar.gz
+            tar --extract --gzip --file="fedora-deps.tar.gz" --overwrite
             sudo dnf install ./compat-libstdc++-33-3.2.3-68.16.fc26.1.i686.rpm ./cups-libs-2.2.12-8.fc30.i686.rpm
         ;;
         opensuse-leap|opensuse-tumbleweed)
-            tar --extract --auto-compression --overwrite --file="opensuse-deps.tar.gz"
+            wget https://github.com/ventisangel/bash-scripts/raw/master/lexmark/opensuse-deps.tar.gz
+            tar --extract --gzip --file="opensuse-deps.tar.gz" --overwrite
             sudo zypper install ./libstdc++33-32bit-3.3.3-lp152.41.1.x86_64.rpm ./libcupsimage2-32bit-2.2.7-lp152.8.1.x86_64.rpm
         ;;
     esac
 }
 
-function installLexmarkDriver {
-    echo "Installing driver..."
-    case $distro in
-        debian)
-            sudo apt-get install ./lxkbZ600drv.deb
-        ;;
-        ubuntu)
-            sudo apt-get install ./lxkbZ600drv.deb
-        ;;
-        fedora)
-            sudo dnf install ./lxkbZ600drv.rpm
-        ;;
-        opensuse-leap|opensuse-tumbleweed)
-            sudo zypper install ./lxkbZ600drv.rpm
-        ;;
-    esac
+function installNode {
+    echo "Downloading Node.js package..."
+    nodeVer=$(curl -s https://nodejs.org/download/release/latest/ | grep "linux-x64.tar.gz" | cut -d '"' -f 2)
+    wget -O nodejs.tar.gz https://nodejs.org/download/release/latest/"$nodeVer"
+    echo "Installing Node.js..."
+    sudo tar --extract --gzip --file="nodejs.tar.gz" --overwrite
+    folderName=$(echo "$nodeVer" | cut -d '.' -f 1,2,3)
+    sudo chmod -R 777 "$folderName"
+    cd "$folderName"
+    sudo mv --update --target-directory=/usr/bin bin/*
+    sudo mv --update --target-directory=/usr/include include/*
+    sudo mv --update --target-directory=/usr/lib lib/*
+    sudo mv --update --target-directory=/usr/share share/systemtap
+    sudo mv --update --target-directory=/usr/share/doc share/doc/*
+    sudo mv --update --target-directory=/usr/share/man/man1 share/man/man1/*
+    cd ..
+    unset nodeVer
+    unset folderName
+}
+
+function buildBrackets {
+    installNode
+    sudo npm install -g grunt-cli
+    echo "Downloading packages..."
+    linkRelease=$(curl -s https://api.github.com/repos/adobe/brackets/releases/latest | grep -oP '(?<="tarball_url": ").*(?=",)')
+    linkShell=$(curl -s https://api.github.com/repos/adobe/brackets-shell/releases/latest | grep -oP '(?<="tarball_url": ").*(?=",)')
+    wget -O brackets.tar.gz "$linkRelease"
+    wget -O brackets-shell.tar.gz "$linkShell"
+    echo "Extracting application components..."
+    mkdir build
+    sudo tar --extract --gzip --file="brackets.tar.gz" --overwrite --directory=/tmp/tempDir/build
+    sudo tar --extract --gzip --file="brackets-shell.tar.gz" --overwrite --directory=/tmp/tempDir/build
+    sudo chmod -R 777 build
+    cd build/adobe-brackets-shell*/
+    npm install
+    grunt
+    cd ../adobe-brackets*/
+    npm install
+    grunt build
+    cd ../..
+    unset linkRelease
+    unset linkShell
+}
+
+function installPowerShell {
+    link=$(curl -s https://api.github.com/repos/PowerShell/PowerShell/releases/latest | grep -oP '(?<="browser_download_url":").*?(?=")' | grep linux-x64.tar.gz)
+    wget -O powershell.tar.gz "$link"
+    read -rp ""
+    mkdir ~/.pwsh
+    sudo tar --extract --gzip --file="powershell.tar.gz" --overwrite --directory=~/.pwsh
+    echo "In order to use PowerShell, type '~/.pwsh/pwsh'"
+    unset link
 }
 
 function terminate {
@@ -93,11 +133,10 @@ function terminate {
 
 printf "%s\n" "Install proprietary apps/drivers" "--------------------------------" "Preparing directory for storing packages..."
 mkdir /tmp/tempDir
-echo "Entering created directory..."
 cd /tmp/tempDir || exit
 
 distro=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-menuitems=( 'Discord' 'Skype' 'VS Code' 'VS Code Insiders' 'Telegram' 'MS Teams' 'Google Chrome' 'Google Earth' 'Opera' 'Lexmark Printer Driver' 'Terminate script' )
+menuitems=( 'Discord' 'Skype' 'VS Code' 'VS Code Insiders' 'Telegram' 'MS Teams' 'Google Chrome' 'Google Earth' 'Opera' 'Brackets' 'PowerShell' 'Lexmark Printer Driver' 'Terminate script' )
 PS3="Which of these apps/drivers do you want to install? "
 
 trap "echo You cannot interrupt execution of this script, please wait..." SIGINT SIGQUIT SIGTERM
@@ -147,14 +186,20 @@ do
                     wget -O opera.deb https://download.opera.com/download/get/\?partner=www\&opsys=Linux\&package=DEB
                     sudo apt-get install ./opera.deb
                 ;;
+                'Brackets')
+                    buildBrackets
+                ;;
+                'PowerShell')
+                    installPowerShell
+                ;;
                 'Lexmark Printer Driver')
-                    mkdir lexmark
-                    cd lexmark || exit
                     sudo dpkg --add-architecture i386
                     installDepsLexmark
-                    installLexmarkDriver
+                    wget https://github.com/ventisangel/bash-scripts/raw/master/lexmark/lexmark-driver.tar.gz
+                    sudo tar --extract --gzip --file="lexmark-driver.tar.gz" --no-overwrite-dir --directory=/
+                    sudo ldconfig
+                    #sudo apt-get install ./lxkbZ600drv.deb
                     sudo systemctl restart cups.service
-                    cd ..
                 ;;
                 'Terminate script')
                     terminate
@@ -242,13 +287,23 @@ do
                         sudo zypper install ./opera.rpm
                     fi
                 ;;
+                'Brackets')
+                    buildBrackets
+                ;;
+                'PowerShell')
+                    installPowerShell
+                ;;
                 'Lexmark Printer Driver')
-                    mkdir lexmark
-                    cd lexmark || exit
                     installDepsLexmark
-                    installLexmarkDriver
+                    wget https://github.com/ventisangel/bash-scripts/raw/master/lexmark/lexmark-driver.tar.gz
+                    sudo tar --extract --gzip --file="lexmark-driver.tar.gz" --no-overwrite-dir --directory=/
+                    sudo ldconfig
+                    #if [ "$distro" = "fedora" ]; then
+                        #sudo dnf install ./lxkbZ600drv.rpm
+                    #else
+                        #sudo zypper install ./lxkbZ600drv.rpm
+                    #fi
                     sudo systemctl restart cups.service
-                    cd ..
                 ;;
                 'Terminate script')
                     terminate
